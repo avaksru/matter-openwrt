@@ -1,4 +1,4 @@
-name: build matter packages 
+name: Build Matter Packages
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Build
+      - name: Build OpenWRT with Matter
         uses: addnab/docker-run-action@v3
         with:
           image: ghcr.io/project-chip/matter-openwrt-build:24.10.1
@@ -19,11 +19,16 @@ jobs:
           shell: bash
           run: |
             set -x
-            echo "src-link --force matter /workspace" >>feeds.conf
+            # Setup Matter feed
+            echo "src-link --force matter /workspace" >> feeds.conf.default
             ./scripts/feeds update matter
             ./scripts/feeds install -a -p matter
-            cat feeds/matter/.config.ci >.config
+            
+            # Apply Matter config
+            cat feeds/matter/.config.ci >> .config
             make defconfig
+            
+            # Build individual packages first
             failed=()
             for pkg in $(awk -F '[[:space:]]|/' '/^Source-Makefile:/{print$(NF-1)}' feeds/matter.index); do
               echo "::group::Building $pkg"
@@ -33,6 +38,13 @@ jobs:
               fi
               echo "::endgroup::"
             done
+            
+            # Final package compilation and index creation
+            echo "::group::Final package compilation"
+            make -j "$(nproc)" package/compile
+            make package/index
+            echo "::endgroup::"
+            
             if [[ "${#failed[@]}" -gt 0 ]]; then
               echo "ERROR: Some packages failed to build: ${failed[*]}"
               exit 2
@@ -42,5 +54,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: matter-packages
-          path: ${{ github.workspace }}/bin/packages/
+          path: ${{ github.workspace }}/bin/targets/**/packages/*
           retention-days: 5
+          if-no-files-found: error
