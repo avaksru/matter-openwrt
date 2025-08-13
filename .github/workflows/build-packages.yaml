@@ -1,7 +1,7 @@
 name: build matter packages
 
 on:
-  workflow_dispatch:  
+  workflow_dispatch:
   pull_request:
   push:
 
@@ -12,9 +12,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      # Run only the build step in the container rather than the whole job, because the UID of the
-      # buildbot user (1000) that owns the OpenWrt SDK files in /builder doesn't match the UID of
-      # the GitHub runner user (1001), causing file system permission issues.
       - name: Build
         uses: addnab/docker-run-action@v3
         with:
@@ -23,17 +20,17 @@ jobs:
           shell: bash
           run: |
             set -x
-            echo "src-link --force matter /workspace" >>feeds.conf
+            echo "src-link --force matter /workspace" >> feeds.conf
             ./scripts/feeds update matter
             ./scripts/feeds install -a -p matter
-            cat feeds/matter/.config.ci >.config
+            cat feeds/matter/.config.ci > .config
             make defconfig
             failed=()
             for pkg in $(awk -F '[[:space:]]|/' '/^Source-Makefile:/{print$(NF-1)}' feeds/matter.index); do
               echo "::group::Building $pkg"
               if ! make -j "$(nproc)" "package/$pkg/compile"; then
                 failed+=("$pkg")
-                make "package/$pkg/compile" V=s || true # re-run with verbose output
+                make "package/$pkg/compile" V=s || true
               fi
               echo "::endgroup::"
             done
@@ -41,3 +38,9 @@ jobs:
               echo "ERROR: Some packages failed to build: ${failed[*]}"
               exit 2
             fi
+
+      - name: Upload compiled packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: matter-packages
+          path: ${{ github.workspace }}/bin/packages/**/*
