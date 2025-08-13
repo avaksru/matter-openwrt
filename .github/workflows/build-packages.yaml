@@ -11,7 +11,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          submodules: recursive  # Важно для получения feeds
+          submodules: recursive
 
       - name: Build OpenWRT with Matter
         uses: addnab/docker-run-action@v3
@@ -22,31 +22,38 @@ jobs:
           run: |
             set -ex
             
-            # Инициализация feeds
-            ./scripts/feeds update -a
-            ./scripts/feeds install -a
-            
-            # Проверка наличия Matter feed
+            # Добавление и обновление Matter feed
             if [ ! -d "feeds/matter" ]; then
-              echo "ERROR: Matter feed not found!"
+              echo "Adding Matter feed..."
+              ./scripts/feeds add matter https://github.com/openwrt/packages.git^master
+              ./scripts/feeds update matter
+              ./scripts/feeds install -a
+            fi
+            
+            # Проверка наличия Matter feed после добавления
+            if [ ! -d "feeds/matter" ]; then
+              echo "ERROR: Matter feed could not be added!"
               exit 1
             fi
             
-            # Настройка конфигурации (если .config.ci отсутствует)
-            if [ ! -f "feeds/matter/.config.ci" ]; then
-              echo "WARNING: feeds/matter/.config.ci not found, using default config"
-              make menuconfig  # Или другой способ генерации конфига
-            else
+            # Настройка конфигурации
+            if [ -f "feeds/matter/.config.ci" ]; then
+              echo "Using CI config from feeds/matter"
               cat feeds/matter/.config.ci > .config
+            else
+              echo "Using default config"
+              cp feeds/matter/config.example .config
             fi
             
             make defconfig
-            
-            # Полная сборка
             make -j$(nproc)
-            
-            # Создание пакетов
             make package/index
+            
+            # Проверка наличия собранных пакетов Matter
+            if [ ! -d "bin/packages" ]; then
+              echo "ERROR: No packages were built!"
+              exit 1
+            fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
