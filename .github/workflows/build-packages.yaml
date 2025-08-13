@@ -10,6 +10,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: recursive  # Важно для получения feeds
 
       - name: Build OpenWRT with Matter
         uses: addnab/docker-run-action@v3
@@ -18,42 +20,40 @@ jobs:
           options: --volume ${{ github.workspace }}:/workspace
           shell: bash
           run: |
-            set -x
-            # Setup Matter feed
-            echo "src-link --force matter /workspace" >> feeds.conf.default
-            ./scripts/feeds update matter
-            ./scripts/feeds install -a -p matter
+            set -ex
             
-            # Apply Matter config
-            cat feeds/matter/.config.ci >> .config
+            # Инициализация feeds
+            ./scripts/feeds update -a
+            ./scripts/feeds install -a
+            
+            # Проверка наличия Matter feed
+            if [ ! -d "feeds/matter" ]; then
+              echo "ERROR: Matter feed not found!"
+              exit 1
+            fi
+            
+            # Настройка конфигурации (если .config.ci отсутствует)
+            if [ ! -f "feeds/matter/.config.ci" ]; then
+              echo "WARNING: feeds/matter/.config.ci not found, using default config"
+              make menuconfig  # Или другой способ генерации конфига
+            else
+              cat feeds/matter/.config.ci > .config
+            fi
+            
             make defconfig
             
-            # Build individual packages first
-            failed=()
-            for pkg in $(awk -F '[[:space:]]|/' '/^Source-Makefile:/{print$(NF-1)}' feeds/matter.index); do
-              echo "::group::Building $pkg"
-              if ! make -j "$(nproc)" "package/$pkg/compile"; then
-                failed+=("$pkg")
-                make "package/$pkg/compile" V=s || true
-              fi
-              echo "::endgroup::"
-            done
+            # Полная сборка
+            make -j$(nproc)
             
-            # Final package compilation and index creation
-            echo "::group::Final package compilation"
-            make -j "$(nproc)" package/compile
+            # Создание пакетов
             make package/index
-            echo "::endgroup::"
-            
-            if [[ "${#failed[@]}" -gt 0 ]]; then
-              echo "ERROR: Some packages failed to build: ${failed[*]}"
-              exit 2
-            fi
 
-      - name: Upload compiled packages
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: matter-packages
-          path: ${{ github.workspace }}/bin/targets/**/packages/*
+          name: openwrt-packages
+          path: |
+            ${{ github.workspace }}/bin/targets/**/packages/*
+            ${{ github.workspace }}/bin/packages/*
           retention-days: 5
           if-no-files-found: error
