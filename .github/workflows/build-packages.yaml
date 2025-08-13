@@ -1,4 +1,4 @@
-name: build matter packages
+name: Build Matter Packages
 
 on:
   workflow_dispatch:
@@ -20,17 +20,19 @@ jobs:
           shell: bash
           run: |
             set -x
-            echo "src-link --force matter /workspace" >>feeds.conf
-            ./scripts/feeds update matter
+            echo "src-link --force matter /workspace" >> feeds.conf
+            echo "src-git luci https://git.openwrt.org/project/luci.git" >> feeds.conf
+            ./scripts/feeds update matter luci
             ./scripts/feeds install -a -p matter
-            cat feeds/matter/.config.ci >.config
+            ./scripts/feeds install -a -p luci
+            cat feeds/matter/.config.ci > .config
             make defconfig
             failed=()
             for pkg in $(awk -F '[[:space:]]|/' '/^Source-Makefile:/{print$(NF-1)}' feeds/matter.index); do
               echo "::group::Building $pkg"
-              if ! make -j "$(nproc)" "package/$pkg/compile"; then
+              if ! make -j1 "package/$pkg/compile" V=s; then
                 failed+=("$pkg")
-                make "package/$pkg/compile" V=s || true
+                echo "Failed to build $pkg"
               fi
               echo "::endgroup::"
             done
@@ -38,9 +40,11 @@ jobs:
               echo "ERROR: Some packages failed to build: ${failed[*]}"
               exit 2
             fi
-
+            echo "Listing compiled files:"
+            ls -R /workspace/bin
       - name: Upload compiled packages
         uses: actions/upload-artifact@v4
         with:
           name: matter-packages
           path: ${{ github.workspace }}/bin/packages/**/*
+          if-no-files-found: warn
