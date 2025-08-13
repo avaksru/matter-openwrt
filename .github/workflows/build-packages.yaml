@@ -20,10 +20,10 @@ jobs:
           shell: bash
           run: |
             set -x
-            echo "src-link --force matter /workspace" >> feeds.conf
+            echo "src-link --force matter /workspace" >>feeds.conf
             ./scripts/feeds update matter
             ./scripts/feeds install -a -p matter
-            cat feeds/matter/.config.ci > .config
+            cat feeds/matter/.config.ci >.config
             make defconfig
             failed=()
             for pkg in $(awk -F '[[:space:]]|/' '/^Source-Makefile:/{print$(NF-1)}' feeds/matter.index); do
