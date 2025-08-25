@@ -92,9 +92,9 @@ endef
 CONFIGURE_OPTIONS:=\
 	--enable-recommended=no \
 	--enable-access-restrictions=no \
-	--enable-wifi=no \
-	--enable-openthread=no \
-	--enable-network-layer-ble=no \
+	--enable-wifi=yes \
+	--enable-openthread=yes \
+	--enable-network-layer-ble=yes \
 	--enable-tracing-support=no
 
 # Logging backend
