@@ -14,7 +14,7 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=matter-netman
+PKG_NAME:=chip-tool
 PKG_RELEASE:=1
 PKG_SOURCE_URL:=https://github.com/project-chip/connectedhomeip.git
 PKG_SOURCE_PROTO:=git
@@ -25,7 +25,7 @@ PKG_SOURCE_SUBMODULES:=\
   third_party/nlassert/repo \
   third_party/nlio/repo
 
-# Hash can be regenerated with make package/matter-netman/check FIXUP=1
+# Hash can be regenerated with make package/chip-tool/check FIXUP=1
 PKG_SOURCE_DATE:=2025-07-08
 PKG_SOURCE_VERSION:=dda2252eb28440305c883d0204737dce5b3abe62
 PKG_MIRROR_HASH:=ad81137221dafc0302c70cb90a03ab2472a02ee3c03e8cef8edcba26fd34201d
@@ -45,45 +45,44 @@ PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/matter-netman/default
+define Package/chip-tool/default
   SECTION:=net
   CATEGORY:=Network
-  TITLE:=Matter Network Infrastructure Manager Daemon
+  TITLE:=CHIP Tool
   URL:=https://github.com/project-chip/connectedhomeip
   DEPENDS:=+libstdcpp +libatomic
-  USERID:=matter:matter
 endef
 
-define Package/matter-netman/default/description
-  Matter Network Infrastructure Manager Daemon
-  Integrates a router / access point with the Matter IoT ecosystem.
+define Package/chip-tool/default/description
+  CHIP Tool
+  A command-line tool for interacting with Matter devices.
 endef
 
-define Package/matter-netman-mbedtls
-  $(Package/matter-netman/default)
+define Package/chip-tool-mbedtls
+  $(Package/chip-tool/default)
   TITLE+= (mbedtls)
-  DEPENDS+= +PACKAGE_matter-netman-mbedtls:libmbedtls
+  DEPENDS+= +PACKAGE_chip-tool-mbedtls:libmbedtls
   VARIANT:=mbedtls
   DEFAULT_VARIANT:=1
 endef
 
-define Package/matter-netman-mbedtls/description
-$(Package/matter-netman/default/description)
+define Package/chip-tool-mbedtls/description
+$(Package/chip-tool/default/description)
 
 This variant of the package uses the mbedTLS crypto library,
 which must have the MBEDTLS_CCM_C option enabled.
 endef
 
-define Package/matter-netman-openssl
-  $(Package/matter-netman/default)
+define Package/chip-tool-openssl
+  $(Package/chip-tool/default)
   TITLE+= (openssl)
-  DEPENDS+= +PACKAGE_matter-netman-openssl:libopenssl
-  CONFLICTS:=matter-netman-mbedtls
+  DEPENDS+= +PACKAGE_chip-tool-openssl:libopenssl
+  CONFLICTS:=chip-tool-mbedtls
   VARIANT:=openssl
 endef
 
-define Package/matter-netman-openssl/description
-$(Package/matter-netman/default/description)
+define Package/chip-tool-openssl/description
+$(Package/chip-tool/default/description)
 
 This variant of the package uses the OpenSSL crypto library.
 endef
@@ -99,7 +98,7 @@ CONFIGURE_OPTIONS:=\
 
 # Logging backend
 CONFIGURE_OPTIONS+= --logging-backend=syslog
-TARGET_CFLAGS+= -DCHIP_SYSLOG_IDENT=\"matter\"
+TARGET_CFLAGS+= -DCHIP_SYSLOG_IDENT=\"chip-tool\"
 
 # Crypto backend
 ifeq ($(BUILD_VARIANT),mbedtls)
@@ -111,9 +110,9 @@ CONFIGURE_OPTIONS+= --crypto=openssl
 endif
 
 # Configuration / persistence
-CONF_DIR:=/etc/matter
+CONF_DIR:=/etc/chip-tool
 TARGET_CFLAGS+=\
-	-DCHIP_CONFIG_KVS_PATH=\"$(CONF_DIR)/chip_kvs.ini\" \
+	-DCHIP_CONFIG_KVS_PATH=\"$(CONF_DIR)/chip_tool_kvs.ini\" \
 	-DFATCONFDIR=\"$(CONF_DIR)\" \
 	-DSYSCONFDIR=\"$(CONF_DIR)\" \
 	-DLOCALSTATEDIR=\"$(CONF_DIR)\"
@@ -132,38 +131,38 @@ TARGET_CFLAGS+=\
 TARGET_CFLAGS+= -Wno-format-nonliteral
 
 # The build environment contains host tools that can be shared between targets
-CHIP_BUILD_ENV_DIR:=$(STAGING_DIR_HOST)/share/matter-build-env
+CHIP_BUILD_ENV_DIR:=$(STAGING_DIR_HOST)/share/chip-build-env
 OUT_DIR:=$(PKG_BUILD_DIR)/out/openwrt
 
 define Build/Configure
 	mkdir -p $(OUT_DIR) && cd $(OUT_DIR) && \
 		$(CONFIGURE_VARS) $(PKG_BUILD_DIR)/scripts/configure \
 			--build-env-dir="$(CHIP_BUILD_ENV_DIR)" \
-			--project=examples/network-manager-app/linux \
+			--project=examples/chip-tool \
 			--target=$(GNU_TARGET_NAME) \
 			$(CONFIGURE_OPTIONS)
 endef
 
 define Build/Compile
-	$(NINJA) -C $(OUT_DIR) matter-network-manager-app
+	$(NINJA) -C $(OUT_DIR) chip-tool
 endef
 
-define Package/matter-netman/default/install
-	$(INSTALL_DIR) $(1)/usr/sbin $(1)/usr/share/matter $(1)/etc/init.d
-	$(INSTALL_BIN) $(OUT_DIR)/matter-network-manager-app $(1)/usr/sbin
-	$(INSTALL_DATA) ./files/bootstrap.sh $(1)/usr/share/matter/
-	$(INSTALL_BIN) ./files/matter.init $(1)/etc/init.d/matter
+define Package/chip-tool/default/install
+	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/share/chip-tool $(1)/etc/init.d
+	$(INSTALL_BIN) $(OUT_DIR)/chip-tool $(1)/usr/bin
+	$(INSTALL_DATA) ./files/bootstrap.sh $(1)/usr/share/chip-tool/
+	$(INSTALL_BIN) ./files/chip-tool.init $(1)/etc/init.d/chip-tool
 endef
 
-Package/matter-netman-mbedtls/install=$(Package/matter-netman/default/install)
-Package/matter-netman-openssl/install=$(Package/matter-netman/default/install)
+Package/chip-tool-mbedtls/install=$(Package/chip-tool/default/install)
+Package/chip-tool-openssl/install=$(Package/chip-tool/default/install)
 
-define Package/matter-netman/default/conffiles
+define Package/chip-tool/default/conffiles
 $(CONF_DIR)/
 endef
 
-Package/matter-netman-mbedtls/conffiles=$(Package/matter-netman/default/conffiles)
-Package/matter-netman-openssl/conffiles=$(Package/matter-netman/default/conffiles)
+Package/chip-tool-mbedtls/conffiles=$(Package/chip-tool/default/conffiles)
+Package/chip-tool-openssl/conffiles=$(Package/chip-tool/default/conffiles)
 
-$(eval $(call BuildPackage,matter-netman-mbedtls))
-$(eval $(call BuildPackage,matter-netman-openssl))
+$(eval $(call BuildPackage,chip-tool-mbedtls))
+$(eval $(call BuildPackage,chip-tool-openssl))
