@@ -1,6 +1,6 @@
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=chip
+PKG_NAME:=chip-tool
 PKG_RELEASE:=1
 
 PKG_SOURCE_URL:=https://github.com/project-chip/connectedhomeip.git
