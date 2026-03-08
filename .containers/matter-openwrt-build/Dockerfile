@@ -1,18 +1,15 @@
-ARG OPENWRT_VERSION=24.10.5
-FROM ghcr.io/openwrt/sdk:x86-generic-${OPENWRT_VERSION}
-LABEL org.opencontainers.image.description="Pre-warmed OpenWrt SDK"
+ARG OPENWRT_VERSION=24.10
+ARG TARGET=imx/cortexa7
 
-# Core packages to pre-build to speed up CI builds
-ARG SRC_PACKAGES="glib2 openssl ubus avahi"
-ARG CFG_PACKAGES="glib2 libopenssl libubus libavahi-client"
+FROM openwrt/sdk:${OPENWRT_VERSION}-${TARGET// /-}   # или openwrtorg/sdk:${OPENWRT_VERSION}-${TARGET// /-}
 
-RUN set -x && \
-    grep -w 'base\|packages' feeds.conf.default | sed -e 's|git.openwrt.org/[^/]*|github.com/openwrt|' >feeds.conf && \
-    ./scripts/feeds update -a && \
-    ./scripts/feeds install ${SRC_PACKAGES} && \
-    echo "CONFIG_ALL=n" >.config && \
-    echo "CONFIG_AUTOREMOVE=n" >>.config && \
-    echo "CONFIG_AUTOREBUILD=n" >>.config && \
-    for pkg in ${CFG_PACKAGES}; do echo "CONFIG_PACKAGE_${pkg}=y"; done >>.config && \
-    make defconfig && \
-    for pkg in ${SRC_PACKAGES}; do make -j "$(nproc)" "package/${pkg}/compile"; done
+# или если вы используете полностью кастомный билд:
+
+# RUN git clone ... openwrt.git && cd openwrt \
+#     && ./scripts/feeds update -a \
+#     && echo "src-link matter $(pwd)/../matter-feed" >> feeds.conf.default \
+#     && ./scripts/feeds install -a -p matter \
+#     && echo "CONFIG_PACKAGE_matter=y" >> .config \
+#     && make defconfig \
+#     && echo "CONFIG_TARGET_${TARGET//\//_}=y" >> .config \
+#     && make -j$(nproc)
