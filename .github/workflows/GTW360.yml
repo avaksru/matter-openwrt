@@ -70,16 +70,17 @@ jobs:
       - name: Build and push container
         uses: elgohr/Publish-Docker-Github-Action@v5
         with:
-          name: project-chip/matter-openwrt-build
+          name: project-chip/matter-openwrt-build          # ← только имя без ghcr.io
+          registry: ghcr.io
           context: .containers/matter-openwrt-build
           buildargs: OPENWRT_VERSION,TARGET
-          registry: ghcr.io
-          tags: |
-            ghcr.io/project-chip/matter-openwrt-build:${{ env.OPENWRT_VERSION }}-${{ env.target-slug }}
-            ${{ (inputs.openwrt-version-override == '' && env.target-slug == 'imx-cortexa7') && 'ghcr.io/project-chip/matter-openwrt-build:latest' || '' }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           no_push: ${{ github.repository_owner != 'project-chip' || github.event_name == 'pull_request' || github.event.ref != 'refs/heads/main' }}
+          tags: >-
+            ${{ env.OPENWRT_VERSION }}-${{ env.target-slug }},
+            ${{ env.OPENWRT_VERSION }},
+            ${{ (inputs.openwrt-version-override == '' && env.target-slug == 'imx-cortexa7') && 'latest' || '' }}
 
       - name: Extract artifacts from container
         if: always()  # даже если push не прошёл — артефакты всё равно нужны
