@@ -1,14 +1,7 @@
 name: build matter-openwrt-build container
 
 on:
-  pull_request:
-    paths:
-      - .containers/matter-openwrt-build/**
-      - .github/workflows/build-matter-openwrt-build.yaml
-  push:
-    paths:
-      - .containers/matter-openwrt-build/**
-      - .github/workflows/build-matter-openwrt-build.yaml
+ 
   workflow_dispatch:
     inputs:
       openwrt-version-override:

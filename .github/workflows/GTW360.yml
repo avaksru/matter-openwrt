@@ -1,4 +1,4 @@
-name: build matter-openwrt-build container
+name: build matter-openwrt-GTW360
 
 on:
   pull_request:
