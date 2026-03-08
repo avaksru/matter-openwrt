@@ -1,28 +1,30 @@
-# .containers/matter-openwrt-build/Dockerfile
-
-ARG OPENWRT_VERSION=25.12.0   # или ваша дефолтная версия
+ARG OPENWRT_VERSION=25.12.0
 ARG TARGET=imx/cortexa7
 
-# Заменяем / на _ , потому что официальные теги используют подчёркивание
-FROM openwrt/sdk:${OPENWRT_VERSION}-${TARGET//\//_}
+FROM ubuntu:24.04
 
-# ────────────────────────────────────────────────────────────────
-# Здесь ваша логика: добавление feeds, установка пакетов Matter и т.д.
-# ────────────────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y \
+    build-essential clang flex bison g++ gawk \
+    gcc-multilib g++-multilib gettext git libncurses5-dev \
+    libssl-dev python3-distutils rsync unzip zlib1g-dev \
+    file wget curl vim subversion \
+    && rm -rf /var/lib/apt/lists/*
 
-# Пример (адаптируйте под свой проект):
-USER root
-RUN mkdir -p /builder/feeds \
- && echo "src-link matter /matter-feed" >> /builder/feeds.conf.default \
- && /builder/scripts/feeds update -a \
- && /builder/scripts/feeds install -a -p matter \
- && echo "CONFIG_PACKAGE_matter=y" >> /builder/.config \
- && echo "CONFIG_PACKAGE_matter-examples=y" >> /builder/.config \
+WORKDIR /openwrt
+
+RUN git clone https://git.openwrt.org/openwrt/openwrt.git . \
+ && git checkout v${OPENWRT_VERSION} || git checkout openwrt-${OPENWRT_VERSION}
+
+# Добавьте ваш feed matter
+COPY matter-feed /openwrt/feeds/matter
+
+RUN ./scripts/feeds update -a \
+ && ./scripts/feeds install -a -p matter \
+ && echo "CONFIG_TARGET_imx=y" >> .config \
+ && echo "CONFIG_TARGET_imx_cortexa7=y" >> .config \
+ && echo "CONFIG_PACKAGE_matter=y" >> .config \
  && make defconfig \
- && make package/matter/compile V=s -j$(nproc) \
- && make package/index V=s
+ && make download -j$(nproc) \
+ && make -j$(nproc) V=s || make -j1 V=s
 
-# Опционально: копируем артефакты в известное место
-RUN mkdir -p /artifacts \
- && cp -r /builder/bin/packages/* /artifacts/ 2>/dev/null || true \
- && cp -r /builder/bin/targets/${TARGET//\//_}/* /artifacts/images/ 2>/dev/null || true
+# Артефакты будут в /openwrt/bin/
