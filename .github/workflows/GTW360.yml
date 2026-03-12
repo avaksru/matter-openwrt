@@ -1,55 +1,44 @@
-include $(TOPDIR)/rules.mk
+name: Build chip-tool for imx/cortexa7
 
-PKG_NAME:=chip-tool
-PKG_VERSION:=1.4.0              # актуальная версия на март 2026; проверь на https://github.com/project-chip/connectedhomeip/releases
-PKG_RELEASE:=1
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # позволяет запустить вручную
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/project-chip/connectedhomeip.git
-PKG_SOURCE_VERSION:=main        # или тег release/v1.4.0.0 / конкретный коммит
-PKG_MIRROR_HASH:=skip           # для теста; потом посчитай sha256sum после первого скачивания
+jobs:
+  build:
+    runs-on: ubuntu-24.04
 
-PKG_BUILD_DEPENDS:=gn-host ninja-host python3-host python-yaml-host pkgconf-host
-PKG_BUILD_FLAGS:=no-mips16
+    strategy:
+      matrix:
+        sdk_version: ["25.12.0"]
+        target: ["imx/cortexa7"]
 
-include $(INCLUDE_DIR)/package.mk
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-define Package/chip-tool
-  SECTION:=net
-  CATEGORY:=Network
-  TITLE:=Matter chip-tool (controller tool)
-  DEPENDS:=+libpthread +librt +libstdcpp +libatomic +libcurl +libjson-c +libopenssl \
-           +zlib +libev +libsqlite3 +libnl +libusb-1.0 +bluez-libs
-  URL:=https://github.com/project-chip/connectedhomeip
-endef
+      - name: Debug - check package structure
+        run: |
+          ls -la package/ || echo "Папки package нет!"
+          ls -la package/chip-tool/ || echo "chip-tool не найден"
+          cat package/chip-tool/Makefile || echo "Makefile не найден"
 
-define Package/chip-tool/description
-  Official Matter commissioning and control CLI tool.
-endef
+      - name: Build with OpenWrt SDK
+        uses: openwrt/gh-action-sdk@main
+        env:
+          ARCH: arm_cortex-a7
+          TARGET: ${{ matrix.target }}
+          SDK: ${{ matrix.sdk_version }}
+          PACKAGES: chip-tool
 
-define Build/Configure
-	(cd $(PKG_BUILD_DIR); \
-		./scripts/activate.sh || true; \
-		gn gen out/armv7 \
-			--args='target_os="linux" target_cpu="arm" \
-			        arm_version=7 \
-			        chip_build_libshell=true \
-			        chip_build_tests=false \
-			        chip_enable_openthread=false \
-			        chip_enable_ble=true \
-			        treat_warnings_as_errors=false \
-			        target_sysroot="$(STAGING_DIR)"' \
-	)
-endef
-
-define Build/Compile
-	ninja -C $(PKG_BUILD_DIR)/out/armv7 chip-tool
-endef
-
-define Package/chip-tool/install
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/out/armv7/chip-tool $(1)/usr/bin/
-	$(STRIP) $(1)/usr/bin/chip-tool
-endef
-
-$(eval $(call BuildPackage,chip-tool))
+      - name: Upload built ipk
+        uses: actions/upload-artifact@v4
+        with:
+          name: chip-tool-ipk-$$   {{ matrix.sdk_version }}-   $${{ matrix.target }}
+          path: bin/packages/**/chip-tool/*.ipk
+          if-no-files-found: warn
