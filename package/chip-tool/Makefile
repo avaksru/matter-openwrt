@@ -7,7 +7,7 @@ PKG_RELEASE:=1
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/project-chip/connectedhomeip.git
 PKG_SOURCE_VERSION:=v1.5.0.1   # стабильный тег вместо master
-PKG_MIRROR_HASH:=skip          # ← сначала оставь skip, чтобы скачать и получить новый хэш
+PKG_MIRROR_HASH:=sha256:6646e275772cd61d84ee895a4bb36685f4c2529baab7146bc1c85e4512cdacc2
 
 PKG_BUILD_DEPENDS:=gn-host ninja-host python3-host python-yaml-host pkgconf-host
 PKG_BUILD_FLAGS:=no-mips16
