@@ -1,13 +1,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=chip-tool
-PKG_VERSION:=1.4.0
+PKG_VERSION:=1.5.0.1
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/project-chip/connectedhomeip.git
-PKG_SOURCE_VERSION:=master   # или конкретный тег, напр. release/v1.4.0.0
-PKG_MIRROR_HASH:=skip      # потом замени на реальный после первой сборки
+PKG_SOURCE_VERSION:=v1.5.0.1   # стабильный тег вместо master
+PKG_MIRROR_HASH:=skip          # ← сначала оставь skip, чтобы скачать и получить новый хэш
 
 PKG_BUILD_DEPENDS:=gn-host ninja-host python3-host python-yaml-host pkgconf-host
 PKG_BUILD_FLAGS:=no-mips16
