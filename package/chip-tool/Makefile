@@ -6,7 +6,7 @@ PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/project-chip/connectedhomeip.git
-PKG_SOURCE_VERSION:=main   # или конкретный тег, напр. release/v1.4.0.0
+PKG_SOURCE_VERSION:=master   # или конкретный тег, напр. release/v1.4.0.0
 PKG_MIRROR_HASH:=skip      # потом замени на реальный после первой сборки
 
 PKG_BUILD_DEPENDS:=gn-host ninja-host python3-host python-yaml-host pkgconf-host
