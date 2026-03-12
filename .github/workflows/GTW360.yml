@@ -22,21 +22,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build package with OpenWrt SDK
+      - name: Build with OpenWrt SDK
         uses: openwrt/gh-action-sdk@main
         env:
           ARCH: arm_cortex-a7
           TARGET: ${{ matrix.target }}
           SDK: ${{ matrix.sdk_version }}
-          PACKAGES: chip-tool                  # ← это работает
-          FEEDNAME: custom                     # ← переименуй feed, чтобы не было конфликта с "action"
-          # FEED_DIR: .                        # по умолчанию корень — ок
-          # EXTRA_FEEDS: ...                   # если нужны внешние feeds
-          # NO_DEFAULT_FEEDS: true             # если хочешь отключить стандартные feeds SDK (редко)
+          PACKAGES: chip-tool             # ← только это обязательно
+          # FEEDNAME: custom              # ← можно убрать, default action тоже работает
+          # NO_DEFAULT_FEEDS: true        # ← только если хочешь отключить стандартные feeds (редко нужно)
 
-      - name: Upload built packages
+      - name: Upload artifacts (ipk + logs)
         uses: actions/upload-artifact@v4
         with:
-          name: chip-tool-$$   {{ matrix.sdk_version }}-   $${{ matrix.target }}
-          path: bin/packages/*/*/chip-tool/*.ipk
+          name: chip-tool-${{ matrix.sdk_version }}-${{ matrix.target }}
+          path: |
+            bin/packages/**/*.ipk
+            logs/**/*
           if-no-files-found: warn
