@@ -1,11 +1,11 @@
-name: Build chip-tool for arm_cortex-a7
+name: Build chip-tool for imx/cortexa7
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch:  # позволяет запустить вручную
 
 jobs:
   build:
@@ -22,21 +22,23 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Debug - check package structure
+        run: |
+          ls -la package/ || echo "Папки package нет!"
+          ls -la package/chip-tool/ || echo "chip-tool не найден"
+          cat package/chip-tool/Makefile || echo "Makefile не найден"
+
       - name: Build with OpenWrt SDK
         uses: openwrt/gh-action-sdk@main
         env:
           ARCH: arm_cortex-a7
           TARGET: ${{ matrix.target }}
           SDK: ${{ matrix.sdk_version }}
-          PACKAGES: chip-tool             # ← только это обязательно
-          # FEEDNAME: custom              # ← можно убрать, default action тоже работает
-          # NO_DEFAULT_FEEDS: true        # ← только если хочешь отключить стандартные feeds (редко нужно)
+          PACKAGES: chip-tool
 
-      - name: Upload artifacts (ipk + logs)
+      - name: Upload built ipk
         uses: actions/upload-artifact@v4
         with:
-          name: chip-tool-${{ matrix.sdk_version }}-${{ matrix.target }}
-          path: |
-            bin/packages/**/*.ipk
-            logs/**/*
+          name: chip-tool-ipk-$$   {{ matrix.sdk_version }}-   $${{ matrix.target }}
+          path: bin/packages/**/chip-tool/*.ipk
           if-no-files-found: warn
