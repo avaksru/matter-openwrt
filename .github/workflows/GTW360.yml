@@ -1,4 +1,4 @@
-name: Build chip-tool for arm_cortex-a7
+name: Build chip-tool for GTW360 arm_cortex-a7
 
 on:
   push:
