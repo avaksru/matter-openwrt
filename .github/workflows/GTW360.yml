@@ -1,50 +1,42 @@
-name: Build chip-tool for GTW360 arm_cortex-a7
+name: Build chip-tool for arm_cortex-a7
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:   # позволяет запускать вручную
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04   # или ubuntu-latest
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
-        sdk_version: ["25.12.0"]   # или "SNAPSHOT" если хочешь самую свежую
-        target: ["imx/cortexa7"]   # или "imx/cortexa7" если подцель именно такая
+        sdk_version: ["25.12.0"]
+        target: ["imx/cortexa7"]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # важно для feeds и git history если используешь
+          fetch-depth: 0
 
       - name: Build package with OpenWrt SDK
         uses: openwrt/gh-action-sdk@main
         env:
-          ARCH: arm_cortex-a7   # или arm_cortex-a7_neon-vfpv4 если у тебя neon-вариант
+          ARCH: arm_cortex-a7
           TARGET: ${{ matrix.target }}
           SDK: ${{ matrix.sdk_version }}
-          PACKAGES: chip-tool   # имя пакета из твоего Makefile
-          FEEDS: "matter"        # имя твоего feed'а
-          # Если нужно обновить feeds.conf перед сборкой:
-          # PREPARE: |
-          #   echo "src-link matter ./" >> feeds.conf
+          PACKAGES: chip-tool                  # ← это работает
+          FEEDNAME: custom                     # ← переименуй feed, чтобы не было конфликта с "action"
+          # FEED_DIR: .                        # по умолчанию корень — ок
+          # EXTRA_FEEDS: ...                   # если нужны внешние feeds
+          # NO_DEFAULT_FEEDS: true             # если хочешь отключить стандартные feeds SDK (редко)
 
       - name: Upload built packages
         uses: actions/upload-artifact@v4
         with:
-          name: chip-tool-${{ matrix.sdk_version }}-${{ matrix.target }}
-          path: bin/packages/*/chip-tool/*.ipk
-          if-no-files-found: warn   # или error если обязательно
-
-      - name: Create Release (on tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: bin/packages/*/chip-tool/*.ipk
-          draft: false
-          prerelease: false
+          name: chip-tool-$$   {{ matrix.sdk_version }}-   $${{ matrix.target }}
+          path: bin/packages/*/*/chip-tool/*.ipk
+          if-no-files-found: warn
