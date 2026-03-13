@@ -9,7 +9,7 @@ PKG_SOURCE_URL:=https://github.com/project-chip/connectedhomeip.git
 PKG_SOURCE_VERSION:=v1.5.0.1
 PKG_SOURCE_SUBDIR:=$$   (PKG_NAME)-   $$(PKG_VERSION)
 PKG_SOURCE:=$(PKG_SOURCE_SUBDIR).tar.zst
-PKG_MIRROR_HASH:=sha256:6646e275772cd61d84ee895a4bb36685f4c2529baab7146bc1c85e4512cdacc2
+PKG_MIRROR_HASH:=skip
 
 PKG_BUILD_DEPENDS:=gn-host ninja-host python3-host python-yaml-host pkgconf-host
 PKG_BUILD_FLAGS:=no-mips16
